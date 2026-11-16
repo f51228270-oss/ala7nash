@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ala7nash</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#f6f1ea;--card:#fffdf9;--ink:#2a211b;--mut:#7a6c60;--ac:#d9692b;--ac2:#fff;--ln:#e6dccf;--me:#f8dcc7}
+@media (prefers-color-scheme:dark){:root{--bg:#17120f;--card:#221b16;--ink:#f3e9df;--mut:#a39384;--ac:#f08a4b;--ac2:#1b130d;--ln:#382d25;--me:#4a2f1e}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+header{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--ln);background:var(--card)}
+.logo{font:700 22px Georgia,serif}.logo b{color:var(--ac)}
+nav{display:flex;gap:4px;margin-inline:auto}
+nav button{border:0;background:none;color:var(--mut);font:600 14px inherit;padding:8px 14px;border-radius:99px;cursor:pointer}
+nav button.on{background:var(--ac);color:var(--ac2)}
+main{flex:1;min-height:0;display:flex;flex-direction:column}
+section{display:none;flex:1;min-height:0;flex-direction:column;padding:16px;max-width:980px;width:100%;margin:0 auto}
+section.on{display:flex}
+.bar{display:flex;align-items:center;gap:10px;margin-bottom:12px}.bar h2{margin:0;font:700 20px Georgia,serif;flex:1}
+.btn{border:0;background:var(--ac);color:var(--ac2);font:600 14px inherit;padding:9px 16px;border-radius:10px;cursor:pointer}
+.btn.alt{background:var(--card);color:var(--ink);border:1px solid var(--ln)}.btn.red{background:#c9382f;color:#fff}.btn:disabled{opacity:.5}
+#grid{columns:3 190px;column-gap:10px;overflow:auto;flex:1}
+.ph{break-inside:avoid;margin-bottom:10px;background:var(--card);border:1px solid var(--ln);border-radius:12px;overflow:hidden}
+.ph img{display:block;width:100%;min-height:90px;cursor:zoom-in;background:var(--ln)}
+.ph div{padding:6px 10px;font-size:12px;color:var(--mut);display:flex;justify-content:space-between;gap:8px}
+.ph .x{background:none;border:0;color:#c9382f;cursor:pointer;font-size:12px}
+.empty{color:var(--mut);text-align:center;padding:40px 10px}
+#msgs{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.m{max-width:78%;background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:8px 12px;align-self:flex-start;word-break:break-word}
+.m.me{align-self:flex-end;background:var(--me);border-color:transparent}
+.m small{display:block;color:var(--mut);font-size:11px;margin-bottom:2px}
+.compose{display:flex;gap:8px;margin-top:10px}
+input.t{padding:11px 14px;border-radius:12px;border:1px solid var(--ln);background:var(--card);color:var(--ink);font:inherit;min-width:0}
+.compose input{flex:1}.rec{background:#c9382f!important;color:#fff!important}
+.callbox{background:var(--card);border:1px solid var(--ln);border-radius:16px;padding:20px;text-align:center}
+#parts{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:16px 0}
+.pt{background:var(--bg);border:1px solid var(--ln);border-radius:14px;padding:16px 8px}
+.pt i{display:grid;place-items:center;width:46px;height:46px;border-radius:50%;background:var(--ac);color:var(--ac2);font:700 18px Georgia,serif;margin:0 auto 6px;font-style:normal}
+.note{font-size:12px;color:var(--mut);margin-top:12px}
+.ov{position:fixed;inset:0;background:var(--bg);display:none;place-items:center;text-align:center;padding:30px;z-index:10}.ov.on{display:grid}
+.ov form{display:grid;gap:10px;width:280px;max-width:100%}
+#lb{position:fixed;inset:0;background:#000d;display:none;place-items:center;z-index:9;padding:20px}#lb.on{display:grid}#lb img{max-width:100%;max-height:100%;border-radius:8px}
+@media(max-width:560px){.logo{font-size:19px}nav button{padding:8px 10px}}
+</style>
+</head>
+<body>
+<header><div class="logo">Ala<b>7</b>nash</div>
+<nav><button data-t="gal" class="on">Gallery</button><button data-t="chat">Chat</button><button data-t="call">Calls</button></nav>
+<button class="btn alt" id="out" hidden>Sign out</button></header>
+<main>
+<section id="gal" class="on">
+ <div class="bar"><h2>Gallery</h2><input type="file" id="file" accept="image/*" multiple hidden><button class="btn" id="up">Upload photos</button></div>
+ <div id="grid"></div>
+</section>
+<section id="chat">
+ <div class="bar"><h2>Chat</h2></div>
+ <div id="msgs"></div>
+ <div class="compose"><button class="btn alt" id="mic">🎤</button><input class="t" id="txt" placeholder="Write a message…" maxlength="1000"><button class="btn" id="send">Send</button></div>
+</section>
+<section id="call">
+ <div class="bar"><h2>Audio calls</h2></div>
+ <div class="callbox">
+  <div id="cstat">Connecting…</div><div id="parts"></div>
+  <button class="btn" id="join">Join call</button><button class="btn alt" id="mute" hidden>Mute</button><button class="btn red" id="leave" hidden>Leave</button>
+  <div class="note">Needs microphone permission. Calls connect directly between members and can fail on strict networks.</div>
+ </div><div id="audios"></div>
+</section>
+</main>
+<div id="lb"><img alt=""></div>
+<div class="ov" id="msg"><div><div class="logo" style="font-size:34px">Ala<b>7</b>nash</div><p id="mtxt"></p></div></div>
+<div class="ov" id="login"><form id="lf"><div class="logo" style="font-size:34px">Ala<b>7</b>nash</div>
+ <input class="t" name="e" type="email" placeholder="Email" autocomplete="username" required>
+ <input class="t" name="p" type="password" placeholder="Password" autocomplete="current-password" required>
+ <button class="btn">Sign in</button><div id="le" style="color:#c9382f;min-height:1.2em"></div></form></div>
+<div class="ov" id="pw"><form id="pf"><div class="logo" style="font-size:30px">Ala<b>7</b>nash</div>
+ <p>Enter the group passphrase.<br><small style="color:var(--mut)">Photos and messages are encrypted with it in your browser. The first member to post sets it; everyone must use the same. If it is lost, they cannot be recovered.</small></p>
+ <input class="t" id="pwi" type="password" required minlength="8" placeholder="Passphrase (8+ characters)">
+ <label style="font-size:13px"><input type="checkbox" id="rem" checked> Remember on this device</label>
+ <button class="btn">Unlock</button><div id="pe" style="color:#c9382f;min-height:1.2em"></div></form></div>
+<script>
+const SUPABASE_URL='https://phmmckgrexolvdsdtjwm.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_2KmTe22kO2FKv0gz5vs_ZA_q0ofJwj1';   // Project Settings > API > anon public key
+const BUCKET='private-media';
+const $=s=>document.querySelector(s),make=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const show=(id,on=true)=>$('#'+id).classList.toggle('on',on),note=m=>{$('#mtxt').textContent=m;show('msg')};
+let sb,uid,names={},key=null;
+const nm=i=>i===uid?'You':(names[i]||'Member'),ini=i=>(names[i]||'?').charAt(0).toUpperCase();
+const when=t=>new Date(t).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('nav button,section').forEach(e=>e.classList.remove('on'));b.classList.add('on');$('#'+b.dataset.t).classList.add('on');
+ if(b.dataset.t==='chat'){const m=$('#msgs');m.scrollTop=m.scrollHeight}});
+/* ---------- encryption (AES-256-GCM, key from group passphrase) ---------- */
+const enc=new TextEncoder(),dec=new TextDecoder(),urls={};
+const b64=u=>{let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function derive(p){const k=await crypto.subtle.importKey('raw',enc.encode(p),'PBKDF2',false,['deriveKey']);
+ return crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode('ala7nash-v1'),iterations:250000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function seal(u){const iv=crypto.getRandomValues(new Uint8Array(12)),ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,u)),o=new Uint8Array(12+ct.length);o.set(iv);o.set(ct,12);return o}
+async function open(u){return new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:u.slice(0,12)},key,u.slice(12)))}
+const sealText=async t=>b64(await seal(enc.encode(t))),openText=async s=>dec.decode(await open(unb64(s)));
+const sealBlob=async b=>new Blob([await seal(new Uint8Array(await b.arrayBuffer()))],{type:'application/octet-stream'});
+async function mediaUrl(path,type){if(urls[path])return urls[path];
+ const {data,error}=await sb.storage.from(BUCKET).download(path);if(error)throw error;
+ const u=await open(new Uint8Array(await data.arrayBuffer()));return urls[path]=URL.createObjectURL(new Blob([u],{type}))}
+const rid=()=>[...crypto.getRandomValues(new Uint8Array(12))].map(b=>b.toString(16).padStart(2,'0')).join('');
+async function upload(blob){const path=uid+'/'+rid()+'.bin';
+ const {error}=await sb.storage.from(BUCKET).upload(path,await sealBlob(blob),{contentType:'application/octet-stream'});if(error)throw error;return path}
+/* ---------- boot / login / unlock ---------- */
+async function boot(){
+ if(!window.supabase){note('Could not load the Supabase library. Check your connection.');return}
+ if(SUPABASE_ANON_KEY.startsWith('PASTE')){note('Setup needed: paste your Supabase anon key into index.html (SUPABASE_ANON_KEY).');return}
+ sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+ const {data:{session}}=await sb.auth.getSession();
+ if(session){uid=session.user.id;start()}else show('login');
+ sb.auth.onAuthStateChange((ev,s)=>{if(ev==='SIGNED_OUT')location.reload()});
+}
+$('#lf').onsubmit=async e=>{e.preventDefault();$('#le').textContent='';
+ const {data,error}=await sb.auth.signInWithPassword({email:e.target.e.value.trim(),password:e.target.p.value});
+ if(error){$('#le').textContent='Wrong email or password.';return}
+ uid=data.user.id;show('login',false);start()};
+$('#out').onclick=async()=>{localStorage.removeItem('a7p');await sb.auth.signOut()};
+async function unlock(){
+ const saved=localStorage.getItem('a7p');
+ const verify=async p=>{const k=await derive(p),old=key;key=k;
+  const {data}=await sb.from('messages').select('encrypted_body').eq('kind','text').order('created_at',{ascending:false}).limit(1);
+  if(data&&data.length){try{await openText(data[0].encrypted_body)}catch(e){key=old;return false}}return true};
+ if(saved&&await verify(saved))return;
+ show('pw');
+ return new Promise(res=>{$('#pf').onsubmit=async e=>{e.preventDefault();$('#pe').textContent='';const p=$('#pwi').value;
+  if(await verify(p)){if($('#rem').checked)localStorage.setItem('a7p',p);show('pw',false);res()}else $('#pe').textContent='Wrong passphrase.'}})}
+async function start(){
+ $('#out').hidden=false;
+ const {data:pr,error}=await sb.from('profiles').select('id,display_name');
+ if(error){note('Could not load your account: '+error.message);return}
+ (pr||[]).forEach(p=>names[p.id]=p.display_name);
+ await unlock();
+ loadGal();loadMsgs();initCall();
+ sb.channel('db').on('postgres_changes',{event:'*',schema:'public',table:'messages'},loadMsgs)
+  .on('postgres_changes',{event:'*',schema:'public',table:'gallery_items'},loadGal).subscribe();
+}
+/* ---------- gallery ---------- */
+const io=new IntersectionObserver(es=>es.forEach(async e=>{if(!e.isIntersecting)return;io.unobserve(e.target);const im=e.target;
+ try{im.src=await mediaUrl(im.dataset.p,im.dataset.t)}catch(x){im.alt='Cannot load'}}),{rootMargin:'200px'});
+async function loadGal(){
+ const {data,error}=await sb.from('gallery_items').select('*').order('created_at',{ascending:false}).limit(300);
+ const g=$('#grid');g.textContent='';if(error)return g.append(make('div','empty','Could not load photos.'));
+ if(!data.length)return g.append(make('div','empty','No photos yet. Upload the first one!'));
+ data.forEach(r=>{const c=make('div','ph'),im=new Image();im.dataset.p=r.storage_path;im.dataset.t=r.mime_type;im.alt='Photo';
+  im.onclick=()=>{if(im.src){$('#lb img').src=im.src;show('lb')}};io.observe(im);
+  const f=make('div','');f.append(make('span','',nm(r.uploaded_by)+' · '+when(r.created_at)));
+  if(r.uploaded_by===uid){const x=make('button','x','Delete');x.onclick=async()=>{if(!confirm('Delete this photo?'))return;
+   await sb.storage.from(BUCKET).remove([r.storage_path]);await sb.from('gallery_items').delete().eq('id',r.id);loadGal()};f.append(x)}
+  c.append(im,f);g.append(c)})}
+$('#lb').onclick=()=>show('lb',false);$('#up').onclick=()=>$('#file').click();
+const shrink=file=>new Promise(res=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1600/Math.max(im.width,im.height)),c=document.createElement('canvas');
+ c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);c.toBlob(b=>res(b||file),'image/jpeg',.85)};im.onerror=()=>res(file);im.src=URL.createObjectURL(file)});
+$('#file').onchange=async e=>{const b=$('#up');b.disabled=true;
+ for(const f of e.target.files){b.textContent='Uploading…';
+  try{const jpg=await shrink(f),path=await upload(jpg);
+   const {error}=await sb.from('gallery_items').insert({storage_path:path,file_name:f.name.slice(0,120),mime_type:jpg.type||'image/jpeg',uploaded_by:uid});if(error)throw error}
+  catch(x){alert('Upload failed: '+(x.message||'error'))}}
+ b.textContent='Upload photos';b.disabled=false;e.target.value='';loadGal()};
+/* ---------- chat ---------- */
+async function loadMsgs(){
+ const {data,error}=await sb.from('messages').select('*').order('created_at',{ascending:true}).limit(300);if(error)return;
+ const box=$('#msgs'),near=box.scrollHeight-box.scrollTop-box.clientHeight<80;box.textContent='';
+ if(!data.length)box.append(make('div','empty','No messages yet. Say hi 👋'));
+ for(const m of data){const e=make('div','m'+(m.sender_id===uid?' me':''));e.append(make('small','',nm(m.sender_id)+' · '+when(m.created_at)));
+  let body='';try{body=await openText(m.encrypted_body)}catch(x){body='[cannot decrypt]'}
+  if(m.kind==='text')e.append(make('span','',body));
+  else{const b=make('button','btn alt','▶ Voice message');b.onclick=async()=>{b.disabled=true;
+    try{const a=new Audio(await mediaUrl(m.storage_path,body||'audio/webm'));a.onended=()=>b.disabled=false;await a.play()}catch(x){b.disabled=false;b.textContent='Cannot play'}};e.append(b)}
+  box.append(e)}
+ if(near)box.scrollTop=box.scrollHeight}
+async function send(){const t=$('#txt').value.trim();if(!t)return;$('#txt').value='';
+ const {error}=await sb.from('messages').insert({sender_id:uid,kind:'text',encrypted_body:await sealText(t)});if(error)alert('Could not send')}
+$('#send').onclick=send;$('#txt').onkeydown=e=>{if(e.key==='Enter')send()};
+let rec=null,chunks=[];
+$('#mic').onclick=async()=>{if(rec){rec.stop();return}
+ try{const st=await navigator.mediaDevices.getUserMedia({audio:true});rec=new MediaRecorder(st);chunks=[];rec.ondataavailable=e=>chunks.push(e.data);
+  rec.onstop=async()=>{st.getTracks().forEach(t=>t.stop());const m=$('#mic');m.classList.remove('rec');m.textContent='🎤';rec=null;
+   const blob=new Blob(chunks,{type:chunks[0]&&chunks[0].type||'audio/webm'});if(blob.size<800)return;
+   try{const path=await upload(blob);const {error}=await sb.from('messages').insert({sender_id:uid,kind:'voice',encrypted_body:await sealText(blob.type),storage_path:path});if(error)throw error}
+   catch(x){alert('Voice message failed to send')}};
+  rec.start();$('#mic').classList.add('rec');$('#mic').textContent='⏹ Stop'}catch(e){alert('Microphone is not available or permission was denied.')}};
+/* ---------- audio calls (WebRTC mesh, signaling over a private Realtime channel) ---------- */
+let ch,pcs={},stream=null,inCall=false;
+const ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'}]};
+const live=()=>{const s=ch.presenceState(),o={};for(const k in s)if(s[k].some(m=>m.call))o[k]=1;return o};
+function initCall(){
+ ch=sb.channel('call',{config:{private:true,presence:{key:uid}}});
+ ch.on('presence',{event:'sync'},sync).on('broadcast',{event:'sig'},({payload})=>onSig(payload))
+  .subscribe(async st=>{if(st==='SUBSCRIBED')await ch.track({call:false});
+   else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'){$('#cstat').textContent='Calls unavailable (run the realtime policy SQL).';$('#join').disabled=true}})}
+function sync(){const l=live(),ks=Object.keys(l);
+ const box=$('#parts');box.textContent='';ks.forEach(k=>{const d=make('div','pt');d.append(make('i','',ini(k)),make('div','',nm(k)));box.append(d)});
+ $('#cstat').textContent=ks.length?ks.length+' in the call':'Nobody is in the call yet.';
+ if(!inCall)return;
+ Object.keys(pcs).forEach(k=>{if(!l[k])closePc(k)});
+ ks.forEach(k=>{if(k!==uid&&uid>k&&!pcs[k])dial(k)})}
+const sig=(to,t,sdp)=>ch.send({type:'broadcast',event:'sig',payload:{to,from:uid,t,sdp}});
+function mkPc(k){const pc=new RTCPeerConnection(ICE);pcs[k]=pc;stream.getTracks().forEach(t=>pc.addTrack(t,stream));
+ pc.ontrack=e=>{let a=document.getElementById('a'+k);if(!a){a=document.createElement('audio');a.id='a'+k;a.autoplay=true;$('#audios').append(a)}a.srcObject=e.streams[0]};
+ pc.onconnectionstatechange=()=>{if(['failed','closed'].includes(pc.connectionState))closePc(k)};return pc}
+const gathered=pc=>new Promise(r=>{if(pc.iceGatheringState==='complete')return r();
+ const f=()=>{if(pc.iceGatheringState==='complete'){pc.removeEventListener('icegatheringstatechange',f);r()}};pc.addEventListener('icegatheringstatechange',f);setTimeout(r,3500)});
+async function dial(k){const pc=mkPc(k);await pc.setLocalDescription(await pc.createOffer());await gathered(pc);sig(k,'offer',pc.localDescription.sdp)}
+async function onSig(p){if(!inCall||!p||p.to!==uid)return;
+ if(p.t==='offer'){closePc(p.from);const pc=mkPc(p.from);await pc.setRemoteDescription({type:'offer',sdp:p.sdp});
+  await pc.setLocalDescription(await pc.createAnswer());await gathered(pc);sig(p.from,'answer',pc.localDescription.sdp)}
+ else if(p.t==='answer'&&pcs[p.from]&&pcs[p.from].signalingState==='have-local-offer')await pcs[p.from].setRemoteDescription({type:'answer',sdp:p.sdp})}
+function closePc(k){const pc=pcs[k];if(pc){pc.close();delete pcs[k]}const a=document.getElementById('a'+k);if(a)a.remove()}
+$('#join').onclick=async()=>{
+ try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})}
+ catch(e){$('#cstat').textContent='Microphone is not available or permission was denied.';return}
+ inCall=true;await ch.track({call:true});$('#join').hidden=true;$('#mute').hidden=false;$('#leave').hidden=false;sync()};
+$('#mute').onclick=()=>{const t=stream.getAudioTracks()[0];t.enabled=!t.enabled;$('#mute').textContent=t.enabled?'Mute':'Unmute'};
+$('#leave').onclick=async()=>{inCall=false;Object.keys(pcs).forEach(closePc);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;
+ await ch.track({call:false});$('#join').hidden=false;$('#mute').hidden=true;$('#leave').hidden=true;$('#mute').textContent='Mute';sync()};
+boot();
+</script>
+</body>
+</html>
